@@ -36,16 +36,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: "3. Thiết lập Android SDK"
-        uses: android-actions/setup-android@v3
-
-      - name: "4. Thiết lập Gradle 8.6"
+      - name: "3. Thiết lập Gradle 8.6"
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.6'
 
-      - name: "5. Nhúng Giao Diện 4 Chế Độ & Biên dịch NovaOS_Xiaomi8_Launcher.apk"
+      - name: "4. Nhúng Giao Diện 4 Chế Độ & Biên dịch NovaOS_Xiaomi8_Launcher.apk"
         run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
           mkdir -p android-launcher/app/src/main/assets/styles
           mkdir -p android-launcher/app/src/main/assets/js
           cp index.html manifest.json android-launcher/app/src/main/assets/
@@ -57,7 +55,7 @@ jobs:
           cp android-launcher/app/build/outputs/apk/release/app-release.apk out/NovaOS_Xiaomi8_Launcher.apk
           ls -lh out/NovaOS_Xiaomi8_Launcher.apk
 
-      - name: "6. Chạy Nồi Cook ROM Hệ Điều Hành (Nhúng APK vào /system/priv-app + Chuẩn VN)"
+      - name: "5. Chạy Nồi Cook ROM Hệ Điều Hành (Nhúng APK vào /system/priv-app + Chuẩn VN)"
         env:
           BASE_SYSTEM_IMG_URL: ${{ github.event.inputs.base_system_img_url }}
         run: |
@@ -66,7 +64,7 @@ jobs:
           chmod +x scripts/cook_system_img.sh
           ./scripts/cook_system_img.sh "${{ github.event.inputs.device_codename || 'dipper' }}"
 
-      - name: "7. Xuất File Vào Mục Artifacts"
+      - name: "6. Xuất File Vào Mục Artifacts"
         uses: actions/upload-artifact@v4
         with:
           name: NovaOS-16-Xiaomi8-APK-And-ROM
@@ -75,7 +73,7 @@ jobs:
             out/*.zip
           retention-days: 30
 
-      - name: "8. Tạo Link Tải Trực Tiếp Cho Điện Thoại (GitHub Releases)"
+      - name: "7. Tạo Link Tải Trực Tiếp Cho Điện Thoại (GitHub Releases)"
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v16.0-vn
