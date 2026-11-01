@@ -1,7 +1,7 @@
 /**
  * ============================================================================
- * NOVAOS 16 — FULL-SCREEN MOBILE OPERATING SYSTEM ENGINE
- * Real SVG Squircle Icons | Real Android PackageManager Icons | Touch Gestures
+ * NOVAOS 16 — REAL ANDROID APPS LAUNCHER & SYSTEM UI ENGINE
+ * Displays 100% Real Installed Apps with Native Icons on Home Screen Pages
  * ============================================================================
  */
 
@@ -24,30 +24,31 @@ const SVG_ICONS = {
 };
 
 const SYSTEM_APPS = [
-  { id: 'settings', name: 'Cài đặt', cls: 'ico-settings', svg: SVG_ICONS.settings },
-  { id: 'gallery', name: 'Thư viện', cls: 'ico-gallery', svg: SVG_ICONS.gallery, nativeKey: 'gallery' },
+  { id: 'themes', name: 'Chủ đề NovaOS', cls: 'ico-themes', svg: SVG_ICONS.themes },
+  { id: 'settings', name: 'Cài đặt OS', cls: 'ico-settings', svg: SVG_ICONS.settings },
+  { id: 'security', name: 'Tối ưu RAM', cls: 'ico-security', svg: SVG_ICONS.security },
   { id: 'files', name: 'Quản lý Tệp', cls: 'ico-files', svg: SVG_ICONS.files },
-  { id: 'themes', name: 'Chủ đề & Nền', cls: 'ico-themes', svg: SVG_ICONS.themes },
-  { id: 'security', name: 'Bảo mật & Tối ưu', cls: 'ico-security', svg: SVG_ICONS.security },
+  { id: 'gallery', name: 'Thư viện', cls: 'ico-gallery', svg: SVG_ICONS.gallery, nativeKey: 'gallery' },
   { id: 'music', name: 'Âm nhạc', cls: 'ico-music', svg: SVG_ICONS.music },
-  { id: 'clock', name: 'Đồng hồ', cls: 'ico-clock', svg: SVG_ICONS.clock },
   { id: 'calc', name: 'Máy tính', cls: 'ico-calc', svg: SVG_ICONS.calc },
   { id: 'notes', name: 'Ghi chú', cls: 'ico-notes', svg: SVG_ICONS.notes },
   { id: 'terminal', name: 'Terminal', cls: 'ico-term', svg: SVG_ICONS.terminal },
+  { id: 'clock', name: 'Đồng hồ', cls: 'ico-clock', svg: SVG_ICONS.clock },
   { id: 'camera', name: 'Máy ảnh', cls: 'ico-camera', svg: SVG_ICONS.camera, nativeKey: 'camera' },
-  { id: 'drawer_btn', name: 'Tất cả ứng dụng', cls: 'ico-drawer', svg: SVG_ICONS.drawer, isDrawerTrigger: true }
+  { id: 'drawer_btn', name: 'Tất cả App', cls: 'ico-drawer', svg: SVG_ICONS.drawer, isDrawerTrigger: true }
 ];
 
 const DOCK_APPS = [
-  { id: 'phone', name: 'Điện thoại', cls: 'ico-phone', svg: SVG_ICONS.phone },
-  { id: 'messages', name: 'Tin nhắn', cls: 'ico-msg', svg: SVG_ICONS.messages },
-  { id: 'browser', name: 'Trình duyệt', cls: 'ico-browser', svg: SVG_ICONS.browser },
+  { id: 'phone', name: 'Điện thoại', cls: 'ico-phone', svg: SVG_ICONS.phone, nativeKey: 'dialer' },
+  { id: 'messages', name: 'Tin nhắn', cls: 'ico-msg', svg: SVG_ICONS.messages, nativeKey: 'sms' },
+  { id: 'browser', name: 'Trình duyệt', cls: 'ico-browser', svg: SVG_ICONS.browser, nativeKey: 'browser' },
   { id: 'camera', name: 'Máy ảnh', cls: 'ico-camera', svg: SVG_ICONS.camera, nativeKey: 'camera' }
 ];
 
 const OS = {
   state: {
     page: 0,
+    totalPages: 2,
     wallpaper: localStorage.getItem('novaos_wp') || 'wp-aurora',
     themeStyle: localStorage.getItem('novaos_style') || 'theme-hyper',
     wifi: true,
@@ -64,8 +65,8 @@ const OS = {
     recentApps: [],
     installedNativeApps: [],
     hw: {
-      model: 'Xiaomi Mi 8',
-      device: 'dipper',
+      model: 'Xiaomi Phone',
+      device: 'xiaomi',
       androidVer: '16',
       ramUsed: '2.1',
       ramTotal: '6.0',
@@ -74,7 +75,7 @@ const OS = {
       diskTotal: '64',
       diskPct: 29
     },
-    notes: JSON.parse(localStorage.getItem('novaos_notes_v2') || '["Chào mừng đến với NovaOS 16","Vuốt từ đỉnh màn hình xuống để mở Trung tâm điều khiển","Vuốt từ dưới lên để mở ngăn Tất cả ứng dụng trong máy"]'),
+    notes: JSON.parse(localStorage.getItem('novaos_notes_v2') || '["Chào mừng đến với NovaOS 16","Vuốt từ đỉnh màn hình xuống để mở Trung tâm điều khiển","Nhấn giữ vào bất kỳ ứng dụng nào để xem Thông tin hoặc Gỡ cài đặt"]'),
     tracks: [
       { title: 'Horizon Light', artist: 'NovaOS Ambient', notes: [261.6, 329.6, 392.0, 523.2, 392.0, 329.6] },
       { title: 'Midnight Pulse', artist: 'Hyper Synth', notes: [220.0, 277.2, 329.6, 440.0, 329.6, 277.2] },
@@ -89,20 +90,29 @@ const OS = {
     setInterval(() => this.updateClock(), 10000);
     this.initBattery();
     this.syncHardwareInfo();
-    this.loadInstalledApps(false);
+    this.loadInstalledApps(true);
     this.renderDesktop();
     this.initTouchGestures();
+  },
+
+  onPhoneResume() {
+    this.syncHardwareInfo();
+    const prevCount = this.state.installedNativeApps.length;
+    this.loadInstalledApps(true);
+    if (this.state.installedNativeApps.length !== prevCount) {
+      this.renderDesktop();
+    }
   },
 
   runBootSequence() {
     const bootLayer = document.getElementById('bootLayer');
     const fill = document.getElementById('bootBarFill');
     if (!bootLayer) return;
-    setTimeout(() => { if (fill) fill.style.width = '100%'; }, 60);
+    setTimeout(() => { if (fill) fill.style.width = '100%'; }, 50);
     setTimeout(() => {
       bootLayer.style.opacity = '0';
-      setTimeout(() => bootLayer.classList.add('hidden'), 450);
-    }, 680);
+      setTimeout(() => bootLayer.classList.add('hidden'), 400);
+    }, 550);
   },
 
   haptic() {
@@ -210,33 +220,125 @@ const OS = {
     }
   },
 
-  renderDesktop() {
-    // Page 1: System Apps
-    const grid1 = document.getElementById('desktopGridPage1');
-    if (grid1) {
-      grid1.innerHTML = SYSTEM_APPS.map(app => `
-        <button class="app-tile" onclick="OS.handleAppTileClick('${app.id}', '${app.nativeKey || ''}', ${!!app.isDrawerTrigger})">
-          <div class="squircle-icon ${app.cls}">${app.svg}</div>
-          <span class="app-tile-label">${app.name}</span>
-        </button>
-      `).join('');
-    }
+  renderNativeAppTile(a) {
+    const iconUrl = `https://appicon.local/${encodeURIComponent(a.pkg)}?cls=${encodeURIComponent(a.cls || '')}`;
+    const safeLabel = (a.label || '').replace(/'/g, "\\'");
+    return `
+      <button class="app-tile"
+        onclick="OS.launchRealActivity('${a.pkg}', '${a.cls || ''}')"
+        oncontextmenu="event.preventDefault(); OS.showAppActions('${a.pkg}', '${safeLabel}'); return false;">
+        <div class="squircle-icon" style="background:rgba(255,255,255,0.14)">
+          <img src="${iconUrl}" loading="lazy" alt="" />
+        </div>
+        <span class="app-tile-label">${a.label}</span>
+      </button>
+    `;
+  },
 
-    // Page 2: Installed Real Phone Apps (or quick apps if on PC preview)
-    const grid2 = document.getElementById('desktopGridPage2');
-    if (grid2) {
-      if (this.state.installedNativeApps.length > 0) {
-        const topApps = this.state.installedNativeApps.slice(0, 16);
-        grid2.innerHTML = topApps.map(a => `
-          <button class="app-tile" onclick="OS.launchRealPackage('${a.pkg}')">
-            <div class="squircle-icon" style="background:rgba(255,255,255,0.12)">
-              ${a.icon ? `<img src="${a.icon}" alt="" />` : SVG_ICONS.drawer}
+  renderDesktop() {
+    const track = document.getElementById('pagesTrack');
+    const dotsWrap = document.getElementById('pageDots');
+    const nativeApps = this.state.installedNativeApps;
+
+    if (nativeApps.length > 0 && track) {
+      // TRÊN ĐIỆN THOẠI THẬT:
+      // Trang 1 hiển thị ngay 2 nút Tùy biến NovaOS + 10 Ứng dụng thật đầu tiên trong máy!
+      // Các trang tiếp theo (Trang 2, 3, 4...) tự động chia mỗi trang 16 ứng dụng thật của máy!
+      const page1Native = nativeApps.slice(0, 10);
+      const remaining = nativeApps.slice(10);
+      const extraPages = [];
+      for (let i = 0; i < remaining.length; i += 16) {
+        extraPages.push(remaining.slice(i, i + 16));
+      }
+
+      this.state.totalPages = 1 + Math.max(1, extraPages.length);
+      track.style.setProperty('--page-count', this.state.totalPages);
+
+      const hw = this.state.hw;
+      let pagesHtml = `
+        <section class="home-page" data-page="0">
+          <div class="widgets-row">
+            <div class="widget-card widget-clock-weather" onclick="OS.openApp('clock')">
+              <div class="wcw-top">
+                <div class="wcw-time" id="homeBigClock">12:00</div>
+                <div class="wcw-date" id="homeBigDate">Chủ Nhật</div>
+              </div>
+              <div class="wcw-bottom">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="#fbbf24"><circle cx="12" cy="12" r="5"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/></svg>
+                <span>27°C · Trời quang</span>
+              </div>
             </div>
-            <span class="app-tile-label">${a.label}</span>
+
+            <div class="widget-card widget-hw" onclick="OS.boostMemory()">
+              <div class="whw-header">
+                <span id="hwModelLabel">${hw.model}</span>
+                <span class="whw-boost-tag">Tối ưu</span>
+              </div>
+              <div class="whw-meters">
+                <div class="whw-item">
+                  <div class="whw-bar-top"><span>RAM</span><strong id="hwRamLabel">${hw.ramUsed} / ${hw.ramTotal} GB</strong></div>
+                  <div class="whw-bar"><div class="whw-fill" id="hwRamFill" style="width:${hw.ramPct}%"></div></div>
+                </div>
+                <div class="whw-item">
+                  <div class="whw-bar-top"><span>Bộ nhớ</span><strong id="hwDiskLabel">${hw.diskUsed} / ${hw.diskTotal} GB</strong></div>
+                  <div class="whw-bar"><div class="whw-fill fill-purple" id="hwDiskFill" style="width:${hw.diskPct}%"></div></div>
+                </div>
+              </div>
+              <div class="whw-foot">Chạm để giải phóng RAM</div>
+            </div>
+          </div>
+
+          <div class="desktop-grid">
+            <button class="app-tile" onclick="OS.openApp('themes')">
+              <div class="squircle-icon ico-themes">${SVG_ICONS.themes}</div>
+              <span class="app-tile-label">Chủ đề OS</span>
+            </button>
+            <button class="app-tile" onclick="OS.openApp('settings')">
+              <div class="squircle-icon ico-settings">${SVG_ICONS.settings}</div>
+              <span class="app-tile-label">Cài đặt OS</span>
+            </button>
+            ${page1Native.map(a => this.renderNativeAppTile(a)).join('')}
+          </div>
+        </section>
+      `;
+
+      if (extraPages.length === 0) {
+        pagesHtml += `<section class="home-page" data-page="1"><div class="desktop-grid"></div></section>`;
+      } else {
+        extraPages.forEach((chunk, idx) => {
+          pagesHtml += `
+            <section class="home-page" data-page="${idx + 1}">
+              <div class="desktop-grid">
+                ${chunk.map(a => this.renderNativeAppTile(a)).join('')}
+              </div>
+            </section>
+          `;
+        });
+      }
+
+      track.innerHTML = pagesHtml;
+
+      if (dotsWrap) {
+        dotsWrap.innerHTML = Array.from({ length: this.state.totalPages })
+          .map((_, i) => `<span class="${i === this.state.page ? 'active' : ''}" onclick="OS.goToPage(${i})"></span>`)
+          .join('');
+      }
+      this.updateClock();
+    } else {
+      // Fallback khi mở thử trên trình duyệt máy tính
+      this.state.totalPages = 2;
+      if (track) track.style.setProperty('--page-count', 2);
+      const grid1 = document.getElementById('desktopGridPage1');
+      if (grid1) {
+        grid1.innerHTML = SYSTEM_APPS.map(app => `
+          <button class="app-tile" onclick="OS.handleAppTileClick('${app.id}', '${app.nativeKey || ''}', ${!!app.isDrawerTrigger})">
+            <div class="squircle-icon ${app.cls}">${app.svg}</div>
+            <span class="app-tile-label">${app.name}</span>
           </button>
         `).join('');
-      } else {
-        // Fallback when previewing on PC browser
+      }
+      const grid2 = document.getElementById('desktopGridPage2');
+      if (grid2) {
         grid2.innerHTML = SYSTEM_APPS.slice(0, 8).map(app => `
           <button class="app-tile" onclick="OS.handleAppTileClick('${app.id}', '${app.nativeKey || ''}', ${!!app.isDrawerTrigger})">
             <div class="squircle-icon ${app.cls}">${app.svg}</div>
@@ -246,7 +348,7 @@ const OS = {
       }
     }
 
-    // Dock
+    // Thanh Dock dưới đáy: Bấm là mở thẳng Điện thoại, Tin nhắn, Trình duyệt, Máy ảnh thật của điện thoại!
     const dock = document.getElementById('mainDock');
     if (dock) {
       dock.innerHTML = DOCK_APPS.map(app => `
@@ -264,23 +366,29 @@ const OS = {
     if (!grid) return;
     const q = (query || '').trim().toLowerCase();
 
+    const nativeItems = this.state.installedNativeApps
+      .filter(a => a.label.toLowerCase().includes(q))
+      .map(a => {
+        const iconUrl = `https://appicon.local/${encodeURIComponent(a.pkg)}?cls=${encodeURIComponent(a.cls || '')}`;
+        const safeLabel = (a.label || '').replace(/'/g, "\\'");
+        return `
+          <button class="app-tile"
+            onclick="OS.closeAppDrawer(); OS.launchRealActivity('${a.pkg}', '${a.cls || ''}')"
+            oncontextmenu="event.preventDefault(); OS.closeAppDrawer(); OS.showAppActions('${a.pkg}', '${safeLabel}'); return false;">
+            <div class="squircle-icon" style="background:rgba(255,255,255,0.14)">
+              <img src="${iconUrl}" loading="lazy" alt="" />
+            </div>
+            <span class="app-tile-label">${a.label}</span>
+          </button>
+        `;
+      });
+
     const sysItems = SYSTEM_APPS.filter(a => !a.isDrawerTrigger && a.name.toLowerCase().includes(q)).map(app => `
       <button class="app-tile" onclick="OS.closeAppDrawer(); OS.handleAppTileClick('${app.id}', '${app.nativeKey || ''}', false)">
         <div class="squircle-icon ${app.cls}">${app.svg}</div>
         <span class="app-tile-label">${app.name}</span>
       </button>
     `);
-
-    const nativeItems = this.state.installedNativeApps
-      .filter(a => a.label.toLowerCase().includes(q))
-      .map(a => `
-        <button class="app-tile" onclick="OS.closeAppDrawer(); OS.launchRealPackage('${a.pkg}')">
-          <div class="squircle-icon" style="background:rgba(255,255,255,0.12)">
-            ${a.icon ? `<img src="${a.icon}" alt="" />` : SVG_ICONS.drawer}
-          </div>
-          <span class="app-tile-label">${a.label}</span>
-        </button>
-      `);
 
     grid.innerHTML = [...nativeItems, ...sysItems].join('');
   },
@@ -309,21 +417,49 @@ const OS = {
     this.openApp(fallbackId);
   },
 
-  launchRealPackage(pkg) {
+  launchRealActivity(pkg, cls) {
     this.haptic();
-    if (window.NovaNative && typeof window.NovaNative.launchApp === 'function') {
-      window.NovaNative.launchApp(pkg);
+    if (window.NovaNative && typeof window.NovaNative.launchActivity === 'function') {
+      window.NovaNative.launchActivity(pkg, cls || '');
     }
   },
 
+  showAppActions(pkg, label) {
+    this.haptic();
+    const win = document.getElementById('appWindow');
+    const title = document.getElementById('appWinTitle');
+    const content = document.getElementById('appWinContent');
+    win.classList.remove('hidden');
+    title.textContent = label;
+    content.innerHTML = `
+      <div class="ios-group">
+        <div class="ios-row" onclick="OS.closeActiveApp(); OS.launchRealActivity('${pkg}', '');">
+          <div class="ios-row-txt"><strong>Mở ứng dụng ${label}</strong><span>Khởi chạy ngay</span></div>
+          <div class="ios-row-right">›</div>
+        </div>
+        <div class="ios-row" onclick="OS.closeActiveApp(); if(window.NovaNative) window.NovaNative.openAppInfo('${pkg}');">
+          <div class="ios-row-txt"><strong>Thông tin ứng dụng (App Info)</strong><span>Quyền hạn, Pin, Bộ nhớ đệm (${pkg})</span></div>
+          <div class="ios-row-right">›</div>
+        </div>
+        <div class="ios-row" onclick="OS.closeActiveApp(); if(window.NovaNative) window.NovaNative.uninstallApp('${pkg}');">
+          <div class="ios-row-txt"><strong style="color:#f87171;">Gỡ cài đặt ứng dụng</strong><span>Xóa ứng dụng này khỏi điện thoại</span></div>
+          <div class="ios-row-right">›</div>
+        </div>
+      </div>
+    `;
+  },
+
   goToPage(idx) {
-    this.state.page = idx;
+    const maxIdx = Math.max(0, this.state.totalPages - 1);
+    const target = Math.max(0, Math.min(maxIdx, idx));
+    this.state.page = target;
     const track = document.getElementById('pagesTrack');
     if (track) {
-      track.style.transform = `translateX(-${idx * 50}%)`;
+      const pct = (target * 100) / this.state.totalPages;
+      track.style.transform = `translateX(-${pct}%)`;
     }
     const dots = document.querySelectorAll('#pageDots span');
-    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    dots.forEach((d, i) => d.classList.toggle('active', i === target));
   },
 
   initTouchGestures() {
@@ -343,9 +479,12 @@ const OS = {
       const dx = e.changedTouches[0].clientX - startX;
       const dy = e.changedTouches[0].clientY - startY;
 
-      if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)) {
-        if (dx < 0 && this.state.page === 0) this.goToPage(1);
-        else if (dx > 0 && this.state.page === 1) this.goToPage(0);
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+        if (dx < 0 && this.state.page < this.state.totalPages - 1) {
+          this.goToPage(this.state.page + 1);
+        } else if (dx > 0 && this.state.page > 0) {
+          this.goToPage(this.state.page - 1);
+        }
       } else if (Math.abs(dy) > 65 && Math.abs(dy) > Math.abs(dx)) {
         if (dy > 0 && startY < 260) {
           this.openControlCenter();
@@ -359,7 +498,7 @@ const OS = {
   openAppDrawer() {
     this.haptic();
     if (this.state.installedNativeApps.length === 0) {
-      this.loadInstalledApps(false);
+      this.loadInstalledApps(true);
     }
     this.renderDrawerList('');
     document.getElementById('appDrawer').classList.remove('hidden');
@@ -526,7 +665,6 @@ const OS = {
     document.getElementById('lockScreen').classList.add('hidden');
   },
 
-  /* --- SYSTEM APPS ENGINE --- */
   openApp(id) {
     this.haptic();
     const win = document.getElementById('appWindow');
@@ -597,7 +735,7 @@ const OS = {
           <div class="ios-row" onclick="if(window.NovaNative) window.NovaNative.openSystemSetting('all');">
             <div class="ios-row-left">
               <div class="ios-row-ico ico-settings">⚙️</div>
-              <div class="ios-row-txt"><strong>Cài đặt nâng cao của phần cứng</strong><span>Mở trình cài đặt gốc của máy</span></div>
+              <div class="ios-row-txt"><strong>Mở Cài đặt Gốc của Điện thoại</strong><span>Vào toàn bộ thiết lập phần cứng</span></div>
             </div>
             <div class="ios-row-right">›</div>
           </div>
@@ -616,6 +754,7 @@ const OS = {
           <div class="ios-row"><div class="ios-row-txt"><strong>Mã phần cứng (Codename)</strong></div><div class="ios-row-right">${hw.device}</div></div>
           <div class="ios-row"><div class="ios-row-txt"><strong>Bộ nhớ RAM</strong></div><div class="ios-row-right">${hw.ramUsed} / ${hw.ramTotal} GB</div></div>
           <div class="ios-row"><div class="ios-row-txt"><strong>Bộ nhớ trong</strong></div><div class="ios-row-right">${hw.diskUsed} / ${hw.diskTotal} GB</div></div>
+          <div class="ios-row"><div class="ios-row-txt"><strong>Tổng số ứng dụng trong máy</strong></div><div class="ios-row-right">${this.state.installedNativeApps.length} ứng dụng</div></div>
           <div class="ios-row"><div class="ios-row-txt"><strong>Phiên bản Android</strong></div><div class="ios-row-right">Android ${hw.androidVer}</div></div>
         </div>
       `;
@@ -636,46 +775,6 @@ const OS = {
           <div class="ios-row" onclick="OS.setThemeStyle('theme-cyber')"><div class="ios-row-txt"><strong>CyberDeck Neon</strong><span>Giao diện lưới kỹ thuật số</span></div><div class="ios-row-right">Chọn</div></div>
         </div>
       `;
-    } else if (id === 'phone') {
-      title.textContent = 'Điện thoại';
-      content.innerHTML = `
-        <div style="display:flex;flex-direction:column;justify-content:space-between;height:100%;padding:12px 10px;">
-          <div style="text-align:center;font-size:32px;font-weight:400;min-height:48px;letter-spacing:0.04em;" id="dialDisplay">${this.state.dialNumber}</div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:280px;margin:0 auto;width:100%;">
-            ${['1','2','3','4','5','6','7','8','9','*','0','#'].map(d => `
-              <button onclick="OS.pressDial('${d}')" style="height:64px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:24px;font-weight:400;cursor:pointer;">${d}</button>
-            `).join('')}
-          </div>
-          <div style="display:flex;justify-content:center;align-items:center;gap:24px;margin-top:16px;">
-            <button onclick="OS.openNativeOrApp('dialer','phone')" style="padding:10px 16px;border-radius:99px;background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:13px;">Danh bạ</button>
-            <button onclick="OS.makeRealCall()" style="width:66px;height:66px;border-radius:50%;background:#10b981;border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;">${SVG_ICONS.phone}</button>
-            <button onclick="OS.pressDial('DEL')" style="padding:10px 16px;border-radius:99px;background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:13px;">⌫ Xóa</button>
-          </div>
-        </div>
-      `;
-    } else if (id === 'messages') {
-      if (window.NovaNative && window.NovaNative.launchApp('sms')) {
-        this.closeActiveApp();
-        return;
-      }
-      title.textContent = 'Tin nhắn';
-      content.innerHTML = `
-        <div class="ios-group">
-          <div class="ios-row"><div class="ios-row-txt"><strong>Tổng đài Viettel</strong><span>Quý khách đang sử dụng gói cước 4G tốc độ cao.</span></div><div class="ios-row-right">Hôm nay</div></div>
-          <div class="ios-row"><div class="ios-row-txt"><strong>Hệ thống NovaOS</strong><span>Chào mừng bạn đến với giao diện NovaOS 16.</span></div><div class="ios-row-right">Vừa xong</div></div>
-        </div>
-      `;
-    } else if (id === 'browser') {
-      title.textContent = 'Trình duyệt';
-      content.innerHTML = `
-        <div style="display:flex;flex-direction:column;height:100%;gap:10px;">
-          <div style="display:flex;gap:8px;">
-            <input id="browserUrlInp" type="text" value="https://www.wikipedia.org" style="flex:1;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:13px;" />
-            <button onclick="document.getElementById('webFrame').src=document.getElementById('browserUrlInp').value" style="padding:0 16px;border-radius:14px;background:#2563eb;border:none;color:#fff;font-weight:600;">Đi</button>
-          </div>
-          <iframe id="webFrame" src="https://vi.m.wikipedia.org" style="flex:1;width:100%;border:none;border-radius:16px;background:#fff;"></iframe>
-        </div>
-      `;
     } else if (id === 'calc') {
       title.textContent = 'Máy tính';
       content.innerHTML = `
@@ -686,35 +785,6 @@ const OS = {
               <button onclick="OS.pressCalcKey('${k}')" style="height:62px;border-radius:50%;border:none;font-size:20px;font-weight:500;color:#fff;background:${['/', '*', '-', '+', '='].includes(k) ? '#f59e0b' : ['C','(',')'].includes(k) ? '#475569' : 'rgba(255,255,255,0.14)'};cursor:pointer;">${k}</button>
             `).join('')}
           </div>
-        </div>
-      `;
-    } else if (id === 'files') {
-      title.textContent = 'Quản lý Tệp';
-      const hw = this.state.hw;
-      content.innerHTML = `
-        <div class="ios-group" style="padding:16px;">
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-            <strong>Bộ nhớ trong thiết bị</strong>
-            <span style="color:#60a5fa;">${hw.diskUsed} GB / ${hw.diskTotal} GB</span>
-          </div>
-          <div class="whw-bar" style="height:8px;"><div class="whw-fill fill-purple" style="width:${hw.diskPct}%"></div></div>
-        </div>
-        <div class="ios-group">
-          <div class="ios-row"><div class="ios-row-left"><div class="ios-row-ico ico-files">📁</div><div class="ios-row-txt"><strong>Download</strong><span>Tệp tải xuống từ trình duyệt</span></div></div><div class="ios-row-right">›</div></div>
-          <div class="ios-row"><div class="ios-row-left"><div class="ios-row-ico ico-gallery">🖼️</div><div class="ios-row-txt"><strong>DCIM / Camera</strong><span>Ảnh và video đã chụp</span></div></div><div class="ios-row-right">›</div></div>
-          <div class="ios-row"><div class="ios-row-left"><div class="ios-row-ico ico-music">🎵</div><div class="ios-row-txt"><strong>Music &amp; CallRecordings</strong><span>Bản ghi âm cuộc gọi &amp; Nhạc</span></div></div><div class="ios-row-right">›</div></div>
-          <div class="ios-row"><div class="ios-row-left"><div class="ios-row-ico ico-notes">📄</div><div class="ios-row-txt"><strong>Documents</strong><span>Tài liệu cá nhân</span></div></div><div class="ios-row-right">›</div></div>
-        </div>
-      `;
-    } else if (id === 'security') {
-      title.textContent = 'Trung tâm Bảo mật & Tối ưu';
-      const hw = this.state.hw;
-      content.innerHTML = `
-        <div style="text-align:center;padding:20px 0;">
-          <div style="width:96px;height:96px;border-radius:50%;border:4px solid #10b981;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:26px;font-weight:700;color:#34d399;">100</div>
-          <strong style="font-size:16px;">Hệ thống hoạt động tối ưu</strong>
-          <p style="font-size:12px;color:#94a3b8;margin-top:4px;">RAM đang dùng: ${hw.ramUsed} / ${hw.ramTotal} GB · Môi trường an toàn cho ứng dụng Ngân hàng</p>
-          <button onclick="OS.boostMemory()" style="margin-top:14px;padding:10px 24px;border-radius:99px;background:#10b981;border:none;color:#000;font-weight:700;cursor:pointer;">Tăng tốc &amp; Giải phóng RAM</button>
         </div>
       `;
     } else if (id === 'notes') {
@@ -733,69 +803,9 @@ const OS = {
           `).join('')}
         </div>
       `;
-    } else if (id === 'terminal') {
-      title.textContent = 'Terminal';
-      const hw = this.state.hw;
-      content.innerHTML = `
-        <div id="termScreen" style="background:#05070c;border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:14px;height:340px;overflow-y:auto;font-family:monospace;font-size:12px;color:#34d399;line-height:1.6;">
-          <div>NovaOS 16 Shell — ${hw.model} (${hw.device})</div>
-          <div>RAM: ${hw.ramUsed}/${hw.ramTotal} GB | Storage: ${hw.diskUsed}/${hw.diskTotal} GB</div>
-          <div style="color:#94a3b8;">Gõ lệnh: neofetch, free, ls, clear</div>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:10px;">
-          <input id="termCmd" type="text" placeholder="Nhập lệnh..." style="flex:1;padding:10px 14px;border-radius:14px;background:#05070c;border:1px solid rgba(255,255,255,0.18);color:#fff;font-family:monospace;" onkeydown="if(event.key==='Enter') OS.runTerm()" />
-          <button onclick="OS.runTerm()" style="padding:0 18px;border-radius:14px;background:#10b981;border:none;color:#000;font-weight:700;">Chạy</button>
-        </div>
-      `;
-    } else if (id === 'music') {
-      title.textContent = 'Âm nhạc';
-      content.innerHTML = `
-        <div class="ios-group">
-          ${this.state.tracks.map((t, i) => `
-            <div class="ios-row" onclick="OS.state.trackIndex=${i}; OS.state.musicPlaying=false; OS.toggleMusic();">
-              <div class="ios-row-left">
-                <div class="ios-row-ico ico-music">♪</div>
-                <div class="ios-row-txt"><strong>${t.title}</strong><span>${t.artist}</span></div>
-              </div>
-              <div class="ios-row-right">Phát ▶</div>
-            </div>
-          `).join('')}
-        </div>
-      `;
-    } else if (id === 'clock') {
-      if (window.NovaNative && window.NovaNative.launchApp('clock')) {
-        this.closeActiveApp();
-        return;
-      }
-      title.textContent = 'Đồng hồ';
-      content.innerHTML = `
-        <div style="text-align:center;padding:40px 0;">
-          <div style="font-size:56px;font-weight:200;">${document.getElementById('sbClock').textContent}</div>
-          <div style="color:#94a3b8;margin-top:6px;">Giờ chuẩn Việt Nam (GMT+7)</div>
-        </div>
-      `;
-    }
-  },
-
-  pressDial(d) {
-    this.haptic();
-    if (d === 'DEL') {
-      this.state.dialNumber = this.state.dialNumber.slice(0, -1);
     } else {
-      this.state.dialNumber += d;
-      this.playTone(440 + parseInt(d || 0, 10) * 35, 0.05);
-    }
-    const el = document.getElementById('dialDisplay');
-    if (el) el.textContent = this.state.dialNumber;
-  },
-
-  makeRealCall() {
-    this.haptic();
-    const num = this.state.dialNumber || '';
-    if (window.NovaNative) {
-      window.NovaNative.launchApp(num ? `tel:${num}` : 'dialer');
-    } else {
-      this.banner(num ? `Đang gọi ${num}...` : 'Mở trình gọi điện');
+      this.closeActiveApp();
+      this.openAppDrawer();
     }
   },
 
@@ -830,32 +840,6 @@ const OS = {
     this.state.notes.splice(idx, 1);
     localStorage.setItem('novaos_notes_v2', JSON.stringify(this.state.notes));
     this.openApp('notes');
-  },
-
-  runTerm() {
-    const inp = document.getElementById('termCmd');
-    const sc = document.getElementById('termScreen');
-    if (!inp || !sc) return;
-    const cmd = inp.value.trim();
-    if (!cmd) return;
-    const hw = this.state.hw;
-    let out = '';
-    if (cmd === 'clear') {
-      sc.innerHTML = '';
-      inp.value = '';
-      return;
-    } else if (cmd === 'neofetch') {
-      out = `OS: NovaOS 16 (Android ${hw.androidVer})<br>Host: ${hw.model} (${hw.device})<br>Memory: ${hw.ramUsed}GB / ${hw.ramTotal}GB`;
-    } else if (cmd === 'free') {
-      out = `Mem: ${hw.ramUsed} GB used / ${hw.ramTotal} GB total`;
-    } else if (cmd === 'ls') {
-      out = `system  vendor  product  sdcard  data`;
-    } else {
-      out = `${cmd}: command executed (0)`;
-    }
-    sc.innerHTML += `<div style="color:#fff;">$ ${cmd}</div><div>${out}</div>`;
-    sc.scrollTop = sc.scrollHeight;
-    inp.value = '';
   },
 
   closeActiveApp() {

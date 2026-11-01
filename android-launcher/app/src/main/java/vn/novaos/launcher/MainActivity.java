@@ -2,6 +2,7 @@ package vn.novaos.launcher;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -18,10 +19,8 @@ import android.os.Environment;
 import android.os.StatFs;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
-import android.provider.AlarmClock;
 import android.provider.MediaStore;
 import android.provider.Settings;
-import android.util.Base64;
 import android.view.Display;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
@@ -29,6 +28,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -36,17 +37,20 @@ import android.webkit.WebViewClient;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MainActivity extends Activity {
 
     private WebView osSurfaceView;
     private boolean torchEnabled = false;
-    private String cachedAppsJson = null;
+    private final Map<String, byte[]> iconPngCache = new ConcurrentHashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,12 +78,63 @@ public class MainActivity extends Activity {
         settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
         settings.setTextZoom(100);
 
-        osSurfaceView.setWebViewClient(new WebViewClient());
+        // Phục vụ trực tiếp Icon PNG thật của mọi App trong máy qua https://appicon.local/<pkg>/<cls>
+        osSurfaceView.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                if (uri != null && "appicon.local".equals(uri.getHost())) {
+                    String path = uri.getPath(); // /<pkg>
+                    if (path != null && path.length() > 1) {
+                        String pkg = path.substring(1);
+                        String cls = uri.getQueryParameter("cls");
+                        byte[] png = loadAppIconBytes(pkg, cls);
+                        if (png != null && png.length > 0) {
+                            return new WebResourceResponse("image/png", null, new ByteArrayInputStream(png));
+                        }
+                    }
+                }
+                return super.shouldInterceptRequest(view, request);
+            }
+        });
+
         osSurfaceView.setWebChromeClient(new WebChromeClient());
         osSurfaceView.addJavascriptInterface(new NovaAndroidBridge(), "NovaNative");
 
         setContentView(osSurfaceView);
         osSurfaceView.loadUrl("file:///android_asset/index.html");
+    }
+
+    private byte[] loadAppIconBytes(String pkg, String cls) {
+        String cacheKey = pkg + "/" + (cls != null ? cls : "");
+        if (iconPngCache.containsKey(cacheKey)) {
+            return iconPngCache.get(cacheKey);
+        }
+        try {
+            PackageManager pm = getPackageManager();
+            Drawable drawable = null;
+            if (cls != null && !cls.isEmpty()) {
+                try {
+                    drawable = pm.getActivityIcon(new ComponentName(pkg, cls));
+                } catch (Exception ignored) {}
+            }
+            if (drawable == null) {
+                drawable = pm.getApplicationIcon(pkg);
+            }
+            int size = 128;
+            Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            drawable.setBounds(0, 0, size, size);
+            drawable.draw(canvas);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, baos);
+            byte[] bytes = baos.toByteArray();
+            iconPngCache.put(cacheKey, bytes);
+            return bytes;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void enableHighRefreshRate() {
@@ -121,36 +176,15 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         enableImmersiveFullscreen();
+        if (osSurfaceView != null) {
+            osSurfaceView.evaluateJavascript("if(window.OS) window.OS.onPhoneResume();", null);
+        }
     }
 
     @Override
     public void onBackPressed() {
         if (osSurfaceView != null) {
             osSurfaceView.evaluateJavascript("if(window.OS) window.OS.handleHardwareBack();", null);
-        }
-    }
-
-    private String drawableToBase64(Drawable drawable) {
-        try {
-            Bitmap bitmap;
-            if (drawable instanceof BitmapDrawable) {
-                bitmap = ((BitmapDrawable) drawable).getBitmap();
-            } else {
-                int w = Math.max(drawable.getIntrinsicWidth(), 96);
-                int h = Math.max(drawable.getIntrinsicHeight(), 96);
-                if (w > 128) w = 128;
-                if (h > 128) h = 128;
-                bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-                Canvas canvas = new Canvas(bitmap);
-                drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-                drawable.draw(canvas);
-            }
-            Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 96, 96, true);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            scaled.compress(Bitmap.CompressFormat.PNG, 85, baos);
-            return "data:image/png;base64," + Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
-        } catch (Exception e) {
-            return "";
         }
     }
 
@@ -228,6 +262,37 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public boolean launchActivity(String pkg, String cls) {
+            try {
+                Intent intent;
+                if (cls != null && !cls.isEmpty()) {
+                    intent = new Intent(Intent.ACTION_MAIN);
+                    intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                    intent.setComponent(new ComponentName(pkg, cls));
+                } else {
+                    PackageManager pm = getPackageManager();
+                    intent = pm.getLaunchIntentForPackage(pkg);
+                }
+                if (intent != null) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                    startActivity(intent);
+                    return true;
+                }
+            } catch (Exception e) {
+                try {
+                    PackageManager pm = getPackageManager();
+                    Intent fallback = pm.getLaunchIntentForPackage(pkg);
+                    if (fallback != null) {
+                        fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(fallback);
+                        return true;
+                    }
+                } catch (Exception ignored) {}
+            }
+            return false;
+        }
+
+        @JavascriptInterface
         public boolean launchApp(String target) {
             try {
                 Intent intent = null;
@@ -238,13 +303,13 @@ public class MainActivity extends Activity {
                 } else if ("sms".equals(target)) {
                     intent = new Intent(Intent.ACTION_MAIN);
                     intent.addCategory(Intent.CATEGORY_APP_MESSAGING);
+                } else if ("browser".equals(target)) {
+                    intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com"));
                 } else if ("camera".equals(target)) {
                     intent = new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
                 } else if ("gallery".equals(target)) {
                     intent = new Intent(Intent.ACTION_VIEW);
                     intent.setType("image/*");
-                } else if ("clock".equals(target)) {
-                    intent = new Intent(AlarmClock.ACTION_SHOW_ALARMS);
                 } else if ("settings".equals(target)) {
                     intent = new Intent(Settings.ACTION_SETTINGS);
                 } else {
@@ -300,9 +365,6 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getInstalledAppsJson(boolean forceRefresh) {
-            if (cachedAppsJson != null && !forceRefresh) {
-                return cachedAppsJson;
-            }
             JSONArray arr = new JSONArray();
             try {
                 PackageManager pm = getPackageManager();
@@ -317,17 +379,37 @@ public class MainActivity extends Activity {
                 });
                 for (ResolveInfo info : apps) {
                     String pkg = info.activityInfo.packageName;
+                    String cls = info.activityInfo.name;
                     if (getPackageName().equals(pkg)) continue;
                     JSONObject obj = new JSONObject();
                     obj.put("label", info.loadLabel(pm).toString());
                     obj.put("pkg", pkg);
-                    obj.put("icon", drawableToBase64(info.loadIcon(pm)));
+                    obj.put("cls", cls);
                     arr.put(obj);
                 }
-                cachedAppsJson = arr.toString();
             } catch (Exception ignored) {
             }
             return arr.toString();
+        }
+
+        @JavascriptInterface
+        public void uninstallApp(String pkg) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_DELETE);
+                intent.setData(Uri.parse("package:" + pkg));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface
+        public void openAppInfo(String pkg) {
+            try {
+                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                intent.setData(Uri.parse("package:" + pkg));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            } catch (Exception ignored) {}
         }
 
         @JavascriptInterface
