@@ -1,0 +1,65 @@
+# ============================================================================
+# NOVAOS 16 HYBRID LITE (LINEAGEOS / AOSP BASE) - XIAOMI 8 SERIES
+# Target Devices: dipper (Mi 8) | ginkgo (Redmi Note 8) | olive (Redmi 8)
+# ============================================================================
+
+# 1. Định danh Hệ Điều Hành (OS Identity)
+ro.novaos.version=16.0-HybridLite-VN
+ro.novaos.codename=TinhAnh
+ro.novaos.maintainer=CustomCookVN
+ro.modversion=NovaOS-16.0-Xiaomi8-VN-Edition
+ro.build.display.id=NovaOS 16.0 Hybrid Lite (Xiaomi 8 Chuẩn VN)
+
+# 2. Chuẩn Hóa Bảo Mật Cho App Ngân Hàng VN & VNeID (SUSFS + Release Keys)
+ro.build.type=user
+ro.build.tags=release-keys
+ro.debuggable=0
+ro.secure=1
+ro.adb.secure=1
+ro.boot.verifiedbootstate=green
+ro.boot.flash.locked=1
+ro.boot.vbmeta.device_state=locked
+ro.is_ever_orange=0
+persist.sys.usb.config=none
+
+# 3. Mặc Định Ngôn Ngữ Tiếng Việt & Múi Giờ Việt Nam
+ro.product.locale=vi-VN
+persist.sys.locale=vi-VN
+persist.sys.timezone=Asia/Ho_Chi_Minh
+ro.wifi.channels=13
+
+# 4. Sóng 4G+ LTE & VoLTE / VoWiFi (Viettel, Vinaphone, Mobifone)
+persist.dbg.ims_volte_enable=1
+persist.dbg.volte_avail_ovr=1
+persist.dbg.vt_avail_ovr=1
+persist.dbg.wfc_avail_ovr=1
+persist.radio.rat_on=combine
+persist.radio.data_ltd_sys_ind=1
+persist.radio.data_con_rprt=1
+ro.telephony.default_network=22,22
+
+# 5. Bật Ghi Âm Cuộc Gọi Tự Động Gốc (Không Phát Tiếng Báo)
+ro.CallRecording.enabled=true
+persist.call_recording.enabled=true
+persist.call_recording.notification=false
+
+# 6. Chống Ngủ Đông Thông Báo Zalo, Messenger, Ngân Hàng (Google FCM Priority)
+ro.UseHighPriorityFCM=true
+persist.sys.fcm.priority_pkgs=com.zing.zalo,com.facebook.orca,com.facebook.katana,com.mbmobile,com.VCB,com.vn.id
+ro.config.max_starting_bg=16
+
+# 7. Tối Ưu RAM & Mở Khóa 90FPS Chiến Game (Snapdragon 845 / 665 / 439)
+ro.surface_flinger.max_frame_buffer_acquired_buffers=3
+debug.sf.latch_unsignaled=1
+debug.cpurend.vsync=false
+ro.vendor.display.acod=1
+persist.sys.NV_FPSLIMIT=90
+persist.sys.gpu_perf_mode=1
+
+# 8. Cho Phép Cài Đặt Mọi Ứng Dụng & Hạ Cấp Tự Do (Bypass SDK Block)
+pm.install.bypass_low_target_sdk=true
+ro.install.allow_downgrade=1
+
+# 9. Lớp Tương Thích VNDK Cho Camera & Vân Tay Xiaomi 8 Trên Android 15/16
+ro.vndk.version=30
+ro.product.first_api_level=28

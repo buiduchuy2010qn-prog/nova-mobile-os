@@ -1,0 +1,11 @@
+{
+  "name": "NovaOS 16 Hybrid Lite — Xiaomi 8 Vietnam Edition",
+  "short_name": "NovaOS 16",
+  "description": "Hệ điều hành Android 16 Hybrid Lite tự cook cho Xiaomi 8 (Chế độ Test An Toàn 100% Anti-Brick)",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#05070f",
+  "theme_color": "#05070f",
+  "lang": "vi-VN"
+}

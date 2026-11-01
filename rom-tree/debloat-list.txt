@@ -1,0 +1,31 @@
+# ============================================================================
+# Danh sách các gói rác & dịch vụ ngầm bị xóa khỏi phân vùng /system & /product
+# Giúp giải phóng ~1.7 GB RAM và 2 GB bộ nhớ cho Xiaomi 8
+# ============================================================================
+/system/app/MSA
+/system/priv-app/MSA-Global
+/system/app/AnalyticsCore
+/system/app/MiuiDaemon
+/system/app/Joyose
+/system/app/CatchLog
+/system/app/HybridAccessory
+/system/app/HybridPlatform
+/system/app/MiBrowserGlobal
+/system/priv-app/Browser
+/system/app/MiuiVideoGlobal
+/system/app/MiuiMusicGlobal
+/system/app/MiPicks
+/system/app/MiPay
+/system/app/NextPay
+/system/app/SoterService
+/system/app/YellowPage
+/system/app/XiaomiServiceFramework
+/system/app/WMService
+/system/app/PaymentService
+/system/product/app/Maps
+/system/product/app/YouTube
+/system/product/app/Gmail2
+/system/product/app/Duo
+/system/product/app/Videos
+/system/product/priv-app/Velvet
+/system/product/priv-app/Wellbeing

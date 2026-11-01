@@ -1,0 +1,92 @@
+name: "NovaOS 16 Hybrid Lite — Build APK Launcher (90FPS) & Full ROM"
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      device_codename:
+        description: "Chọn mã máy Xiaomi 8"
+        required: true
+        default: "dipper"
+        type: choice
+        options:
+          - dipper
+          - ginkgo
+          - olive
+      base_system_img_url:
+        description: "Link phôi AOSP/LineageOS system.img.xz (Tùy chọn)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk-and-rom:
+    name: "Đóng Gói APK Giao Diện 90FPS & Nấu ROM Trên Đám Mây"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "1. Tải mã nguồn dự án"
+        uses: actions/checkout@v4
+
+      - name: "2. Thiết lập Java JDK 17"
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: "3. Thiết lập Android SDK"
+        uses: android-actions/setup-android@v3
+
+      - name: "4. Thiết lập Gradle 8.6"
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.6'
+
+      - name: "5. Nhúng Giao Diện 4 Chế Độ & Biên dịch NovaOS_Xiaomi8_Launcher.apk"
+        run: |
+          mkdir -p android-launcher/app/src/main/assets/styles
+          mkdir -p android-launcher/app/src/main/assets/js
+          cp index.html manifest.json android-launcher/app/src/main/assets/
+          cp -r styles/* android-launcher/app/src/main/assets/styles/
+          cp -r js/* android-launcher/app/src/main/assets/js/
+
+          gradle -p android-launcher assembleRelease --no-daemon
+          mkdir -p out
+          cp android-launcher/app/build/outputs/apk/release/app-release.apk out/NovaOS_Xiaomi8_Launcher.apk
+          ls -lh out/NovaOS_Xiaomi8_Launcher.apk
+
+      - name: "6. Chạy Nồi Cook ROM Hệ Điều Hành (Nhúng APK vào /system/priv-app + Chuẩn VN)"
+        env:
+          BASE_SYSTEM_IMG_URL: ${{ github.event.inputs.base_system_img_url }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y e2fsprogs erofs-utils xz-utils zip curl file
+          chmod +x scripts/cook_system_img.sh
+          ./scripts/cook_system_img.sh "${{ github.event.inputs.device_codename || 'dipper' }}"
+
+      - name: "7. Xuất File Vào Mục Artifacts"
+        uses: actions/upload-artifact@v4
+        with:
+          name: NovaOS-16-Xiaomi8-APK-And-ROM
+          path: |
+            out/NovaOS_Xiaomi8_Launcher.apk
+            out/*.zip
+          retention-days: 30
+
+      - name: "8. Tạo Link Tải Trực Tiếp Cho Điện Thoại (GitHub Releases)"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v16.0-vn
+          name: "NovaOS 16.0 Hybrid Lite — Xiaomi 8 (APK 90FPS & ROM)"
+          body: |
+            ### 📱 Tải Trực Tiếp Cho Điện Thoại Xiaomi 8:
+            1. **`NovaOS_Xiaomi8_Launcher.apk`**: Bản App Giao Diện Hệ Điều Hành 4 Chế Độ (Chạy mượt 60/90FPS trên GPU Adreno, mở thẳng Zalo/MB Bank/VNeID/Liên Quân thật, cài trực tiếp không sợ hư máy).
+            2. **`NovaOS_A16_dipper_SafeTest_DSU.zip`**: Bản chạy thử Hệ điều hành song song qua DSU.
+            3. **`NovaOS_A16_dipper_FullROM.zip`**: Bản Full ROM Hệ thống.
+          files: |
+            out/NovaOS_Xiaomi8_Launcher.apk
+            out/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

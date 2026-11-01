@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#05070f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>NovaOS 16 Hybrid Lite — Xiaomi 8 OS Launcher &amp; ROM</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body class="mode-ios" id="osBody">
+  <!-- Desktop Preview Bar (Automatically hidden when running inside APK on real phone!) -->
+  <div class="pc-preview-bar" id="pcPreviewBar">
+    <div class="pc-brand">
+      <span class="dot-live"></span>
+      <strong>NovaOS 16 Hybrid Lite</strong>
+      <span class="tag-badge" id="pcDeviceBadge">Xiaomi Mi 8 (dipper) · 60/90FPS GPU</span>
+    </div>
+    <div class="pc-controls">
+      <button onclick="NovaOS.setTheme('ios')">1. iOS 18</button>
+      <button onclick="NovaOS.setTheme('hacker')">2. Hacker HUD</button>
+      <button onclick="NovaOS.setTheme('nothing')">3. Nothing LED</button>
+      <button onclick="NovaOS.setTheme('gaming')">4. Gaming 90FPS</button>
+      <button onclick="NovaOS.toggleFullscreenPhone()" class="btn-highlight">📱 Toàn Màn Hình Điện Thoại</button>
+    </div>
+  </div>
+
+  <!-- Main Wrapper (Phone Frame on PC / Edge-to-Edge Fullscreen inside APK) -->
+  <div class="os-viewport" id="osViewport">
+    <div class="phone-frame" id="phoneFrame">
+      <!-- Brightness Dimmer Layer -->
+      <div class="brightness-layer" id="brightnessLayer"></div>
+
+      <!-- 1. STATUS BAR & DYNAMIC ISLAND -->
+      <header class="status-bar">
+        <div class="sb-left" onclick="NovaOS.toggleControlCenter()">
+          <span id="sbTime">12:20</span>
+          <span class="sb-carrier">Viettel</span>
+        </div>
+
+        <div class="dynamic-island gpu-layer" id="dynamicIsland" onclick="NovaOS.toggleDynamicIsland()">
+          <span class="di-dot"></span>
+          <span class="di-text" id="diText">NovaOS 16 · Sẵn sàng</span>
+          <div class="di-wave">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+
+        <div class="sb-right" onclick="NovaOS.toggleControlCenter()">
+          <span class="sb-badge" id="sb4g">4G+</span>
+          <span id="sbWifi">📶</span>
+          <span id="sbBat">95%</span>
+        </div>
+      </header>
+
+      <!-- Dynamic Island Expanded Card -->
+      <div class="di-popup gpu-layer hidden" id="diPopup">
+        <div class="di-popup-row">
+          <div class="di-avatar">🎵</div>
+          <div class="di-info">
+            <strong id="diSongTitle">Nova Synthwave · 90FPS Audio</strong>
+            <span id="diSubStatus">4G+ VoLTE · Ngân hàng &amp; VNeID: An toàn 100%</span>
+          </div>
+          <button class="di-btn" id="btnDiMusic" onclick="NovaOS.toggleMusic()">▶ Phát</button>
+        </div>
+        <div class="di-popup-footer">
+          <span>⚡ GPU Adreno Hardware Accelerated</span>
+          <button onclick="NovaOS.toggleDynamicIsland()">Thu gọn ▲</button>
+        </div>
+      </div>
+
+      <!-- Toast Notification -->
+      <div class="os-toast gpu-layer hidden" id="osToast">
+        <span id="toastIcon">✅</span>
+        <span id="toastMsg">Đã kích hoạt!</span>
+      </div>
+
+      <!-- 2. LOCK SCREEN -->
+      <section class="lock-screen gpu-layer hidden" id="lockScreen">
+        <div class="lock-header">
+          <div class="lock-tag">🔒 NOVAOS 16 HYBRID LITE</div>
+          <div class="lock-clock" id="lockClock">12:20</div>
+          <div class="lock-date" id="lockDate">Chủ Nhật · Hà Nội 26°C</div>
+        </div>
+
+        <div class="lock-cards">
+          <div class="lock-card">
+            <strong>💬 Zalo &amp; Messenger (FCM Push)</strong>
+            <p>Không ngủ đông · Nhận thông báo tức thì 100%</p>
+          </div>
+          <div class="lock-card">
+            <strong>🏦 Bảo Mật Ngân Hàng &amp; VNeID</strong>
+            <p>Trạng thái thiết bị: Chính thống &amp; An toàn 100%</p>
+          </div>
+        </div>
+
+        <div class="lock-footer">
+          <button class="fp-btn" onclick="NovaOS.unlockScreen()">🫆</button>
+          <span>Chạm cảm biến vân tay để mở khóa</span>
+        </div>
+      </section>
+
+      <!-- 3. CONTROL CENTER (4G, Wi-Fi, Chameleon Mode, Brightness) -->
+      <aside class="control-center gpu-layer hidden" id="controlCenter">
+        <div class="cc-header">
+          <div>
+            <h3>Trung Tâm Điều Khiển</h3>
+            <p>Kết nối trực tiếp phần cứng Xiaomi 8</p>
+          </div>
+          <button class="cc-close" onclick="NovaOS.toggleControlCenter()">Đóng ✕</button>
+        </div>
+
+        <div class="cc-grid">
+          <button class="cc-tile active-blue" id="tileWifi" onclick="NovaOS.handleTile('wifi')">
+            <span class="tile-ico">📶</span>
+            <div>
+              <strong>Wi-Fi 5GHz</strong>
+              <small id="subWifi">Đang bật (Chạm mở Cài đặt)</small>
+            </div>
+          </button>
+          <button class="cc-tile active-green" id="tile4g" onclick="NovaOS.handleTile('4g')">
+            <span class="tile-ico">⚡</span>
+            <div>
+              <strong>Dữ liệu 4G+ VoLTE</strong>
+              <small id="sub4g">Viettel LTE</small>
+            </div>
+          </button>
+          <button class="cc-tile active-purple" id="tileStealth" onclick="NovaOS.handleTile('stealth')">
+            <span class="tile-ico">🛡️</span>
+            <div>
+              <strong>Bảo vệ Bank &amp; VNeID</strong>
+              <small id="subStealth">An toàn: BẬT</small>
+            </div>
+          </button>
+          <button class="cc-tile active-red" id="tileBoost" onclick="NovaOS.boostRamNow()">
+            <span class="tile-ico">🚀</span>
+            <div>
+              <strong>Dọn RAM 90FPS</strong>
+              <small id="subBoost">Giải phóng bộ nhớ</small>
+            </div>
+          </button>
+        </div>
+
+        <div class="cc-modes-box">
+          <label>Đổi Giao Diện Tắc Kè Hoa (4 Chế Độ Mượt 90FPS):</label>
+          <div class="cc-modes-row">
+            <button onclick="NovaOS.setTheme('ios'); NovaOS.toggleControlCenter();">iOS 18</button>
+            <button onclick="NovaOS.setTheme('hacker'); NovaOS.toggleControlCenter();">Hacker</button>
+            <button onclick="NovaOS.setTheme('nothing'); NovaOS.toggleControlCenter();">Nothing</button>
+            <button onclick="NovaOS.setTheme('gaming'); NovaOS.toggleControlCenter();">Gaming</button>
+          </div>
+        </div>
+
+        <div class="cc-slider-card">
+          <div class="slider-lbl">
+            <span>☀️ Độ sáng màn hình</span>
+            <span id="valBright">100%</span>
+          </div>
+          <input type="range" min="35" max="100" value="100" oninput="NovaOS.setBrightness(this.value)" />
+        </div>
+      </aside>
+
+      <!-- 4. HOME SCREEN LAUNCHER -->
+      <main class="home-screen gpu-layer" id="homeScreen">
+        <!-- Live System Widget -->
+        <div class="hero-widget gpu-layer" onclick="NovaOS.openApp('gameturbo')">
+          <div class="hw-top">
+            <div>
+              <span class="hw-tag" id="hwTag">✨ GIAO DIỆN iOS 18 KÍNH MỜ · GPU 90FPS</span>
+              <h2 id="hwTitle">Xiaomi Mi 8 · Mượt Chuẩn VN</h2>
+            </div>
+            <span class="hw-ram" id="hwRam">RAM: 1.3/6.0 GB</span>
+          </div>
+          <div class="hw-bottom">
+            <span id="hwLeft">🛡️ MB Bank / VCB / VNeID: Tương thích 100%</span>
+            <span class="hw-ping">PING 16ms · 4G+</span>
+          </div>
+        </div>
+
+        <!-- Installed & System Apps Grid -->
+        <div class="app-grid" id="appGrid"></div>
+
+        <!-- Bottom Dock -->
+        <div class="dock-bar gpu-layer">
+          <button class="dock-item" onclick="NovaOS.launchNativeOrMock('dialer', 'phone')">
+            <div class="app-ico bg-green">📞</div>
+            <span>Điện thoại</span>
+          </button>
+          <button class="dock-item" onclick="NovaOS.launchNativeOrMock('com.zing.zalo', 'zalo')">
+            <div class="app-ico bg-blue">💙</div>
+            <span>Zalo VN</span>
+          </button>
+          <button class="dock-item" onclick="NovaOS.openApp('browser')">
+            <div class="app-ico bg-cyan">🌐</div>
+            <span>Trình duyệt</span>
+          </button>
+          <button class="dock-item" onclick="NovaOS.launchNativeOrMock('camera', 'camera')">
+            <div class="app-ico bg-dark">📷</div>
+            <span>Máy ảnh</span>
+          </button>
+        </div>
+      </main>
+
+      <!-- 5. APP WINDOW CONTAINER -->
+      <section class="app-modal gpu-layer hidden" id="appModal">
+        <div class="app-modal-header">
+          <div class="am-title">
+            <span id="amIcon">🚀</span>
+            <strong id="amName">Ứng dụng</strong>
+          </div>
+          <button class="am-back" onclick="NovaOS.closeApp()">← Màn hình chính</button>
+        </div>
+        <div class="app-modal-body" id="amBody"></div>
+      </section>
+
+      <!-- 6. BOTTOM GESTURE BAR -->
+      <nav class="gesture-bar">
+        <button onclick="NovaOS.closeApp()">◀</button>
+        <div class="gesture-pill" onclick="NovaOS.closeApp()" title="Về màn hình chính"></div>
+        <button onclick="NovaOS.openApp('gameturbo')">■</button>
+      </nav>
+    </div>
+  </div>
+
+  <script src="js/os-core.js"></script>
+</body>
+</html>
