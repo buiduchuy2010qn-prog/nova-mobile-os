@@ -27,3 +27,10 @@ Thay vì xóa ngay phân vùng `/system` gốc của máy (dễ gây treo logo n
 - [`scripts/cook_system_img.sh`](scripts/cook_system_img.sh): Kịch bản Linux tự động mở `system.img`, xóa rác, tiêm cấu hình Chuẩn VN và đóng gói ROM trên đám mây.
 - [`.github/workflows/build-rom.yml`](.github/workflows/build-rom.yml): Kịch bản điều khiển máy chủ **GitHub Actions** gánh 100% việc nặng miễn phí.
 - [`tools/Test_Va_Nap_ROM_Xiaomi8.bat`](tools/Test_Va_Nap_ROM_Xiaomi8.bat): Công cụ Tiếng Việt trên Windows hỗ trợ kiểm tra cáp và nạp chạy thử qua chế độ an toàn **DSU**.
+
+---
+
+## ⚖️ Tuyên bố Pháp lý & Miễn trừ trách nhiệm (Legal Disclaimer)
+
+- Dự án phát hành theo giấy phép **MIT License** phục vụ mục đích học tập và nghiên cứu hệ điều hành dựa trên mã nguồn mở **Android Open Source Project (AOSP)**.
+- **Android** là nhãn hiệu của **Google LLC**; **Xiaomi / Redmi** là nhãn hiệu của **Xiaomi Corporation**. Dự án không liên kết hay được phê duyệt bởi Google hoặc Xiaomi. Người dùng tự chịu mọi trách nhiệm khi can thiệp hệ thống hoặc nạp phân vùng trên thiết bị cá nhân.
